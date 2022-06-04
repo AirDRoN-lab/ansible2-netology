@@ -1,2 +1,1 @@
-# ansible2-netology
-For learning ansible
+# ansible-netology TEST
