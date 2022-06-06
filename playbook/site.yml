@@ -9,24 +9,24 @@
         state: restarted
   tasks:
     - block:
-        - name: Get clickhouse distrib
-          ansible.builtin.get_url:
-            url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
-            dest: "./{{ item }}-{{ clickhouse_version }}.rpm"
-          with_items: "{{ clickhouse_packages }}"
+      - name: Get clickhouse distrib
+        ansible.builtin.get_url:
+          url: "https://packages.clickhouse.com/deb/pool/stable/{{ item }}_{{ clickhouse_version }}_all.deb"
+          dest: "./{{ item }}-{{ clickhouse_version }}.deb"
+        with_items: "{{ clickhouse_packages }}"
       rescue:
-        - name: Get clickhouse distrib
-          ansible.builtin.get_url:
-            url: "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-{{ clickhouse_version }}.x86_64.rpm"
-            dest: "./clickhouse-common-static-{{ clickhouse_version }}.rpm"
+      - name: Get clickhouse distrib (rescue)
+        ansible.builtin.get_url:
+          url: "https://packages.clickhouse.com/deb/pool/stable/clickhouse-common-static_{{ clickhouse_version }}_amd64.deb"
+          dest: "./clickhouse-common-static-{{ clickhouse_version }}.deb"
     - name: Install clickhouse packages
       become: true
-      ansible.builtin.yum:
-        name:
-          - clickhouse-common-static-{{ clickhouse_version }}.rpm
-          - clickhouse-client-{{ clickhouse_version }}.rpm
-          - clickhouse-server-{{ clickhouse_version }}.rpm
+      ansible.builtin.apt:
+        deb: "{{ item }}-{{ clickhouse_version }}.deb"
+      with_items: "{{ clickhouse_packages }}" 
       notify: Start clickhouse service
+    - name: Flush handlers if possible
+      ansible.builtin.meta: flush_handlers
     - name: Create database
       ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
       register: create_db
