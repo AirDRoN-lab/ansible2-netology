@@ -37,7 +37,7 @@
   tasks:
     - name: Get Vector distrib by get_url
       tags: vector
-      ansible.builtin.get_url: 
+      ansible.builtin.get_url:
         url: 'https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-x86_64-unknown-linux-gnu.tar.gz'
         dest: '{{ ansible_facts["env"]["HOME"] }}/vector_{{ vector_version }}_tar.gz'
     - name: Mkdir for Vector by file
@@ -50,7 +50,7 @@
       tags: vector
       become: true
       ansible.builtin.apt:
-        package: "{{ item }}" 
+        package: "{{ item }}"
       with_items:
         - unzip
     - name: UnZIP Vector
@@ -62,20 +62,20 @@
         extra_opts: [--strip-components=2]
     - name: Add EnvPATH to profile
       tags: vector
-      ansible.builtin.lineinfile: 
+      ansible.builtin.lineinfile:
         dest: '{{ ansible_facts["env"]["HOME"] }}/.profile'
-        regexp: ^export 
+        regexp: ^export
         line: 'export PATH="$HOME/vector/bin:$PATH"'
     - name: Commit EnvPATH
       tags: vector
-      ansible.builtin.shell: 
+      ansible.builtin.shell:
         cmd: 'source $HOME/.profile && echo $PATH'
         executable: /bin/bash
       register: path
-    - name: Check EnvPATH
+    - name: CHECK EnvPATH and other VAR (for check only)
       tags: vector
-      ansible.builtin.debug: 
-        msg: 'The variable is {{ path.stdout }} and home dir {{ ansible_facts["env"]["HOME"] }}'
+      ansible.builtin.debug:
+        msg: 'PATH variables {{ path.stdout }}, HOME directory {{ ansible_facts["env"]["HOME"] }}, VM IP {{ yandex_vmip }}'
     - name: ADD group vector for Vector
       tags: vector
       become: true
@@ -85,21 +85,21 @@
     - name: ADD user vector for Vector
       tags: vector
       become: true
-      ansible.builtin.user: 
-        name: vector 
-        groups: vector 
+      ansible.builtin.user:
+        name: vector
+        groups: vector
         shell: /bin/bash
     - name: Change vector.service file for systemd
-      tags: vector 
-      ansible.builtin.lineinfile: 
+      tags: vector
+      ansible.builtin.lineinfile:
         dest: '{{ ansible_facts["env"]["HOME"] }}/vector/etc/systemd/vector.service'
-        regexp: ^ExecStart= 
+        regexp: ^ExecStart=
         line: 'ExecStart={{ ansible_facts["env"]["HOME"] }}/vector/bin/vector --config {{ ansible_facts["env"]["HOME"] }}/vector/config/vector.toml'
     - name: Change vector.service file for systemd. Disable PreStart
-      tags: vector 
-      ansible.builtin.lineinfile: 
+      tags: vector
+      ansible.builtin.lineinfile:
         dest: '{{ ansible_facts["env"]["HOME"] }}/vector/etc/systemd/vector.service'
-        regexp: ^ExecStartPre= 
+        regexp: ^ExecStartPre=
         line: '#'
     - name: Copy vector.service to system dir
       tags: vector
@@ -118,11 +118,3 @@
         name: vector
         state: started
         enabled: yes
-   
-    
- 
-    
-   
-    
-
-
