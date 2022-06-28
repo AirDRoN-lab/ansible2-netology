@@ -2,303 +2,253 @@
 
 ## Подготовка к выполнению
 
-1. Создайте свой собственный (или используйте старый) публичный репозиторий на github с произвольным именем.
-2. Скачайте [playbook](./playbook/) из репозитория с домашним заданием и перенесите его в свой репозиторий.
-3. Подготовьте хосты в соответствии с группами из предподготовленного playbook.
-
 ## Основная часть
 
-1. Приготовьте свой собственный inventory файл `prod.yml`.
+1. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает lighthouse.
 
-Использована переменная `{{ yandex_vmip }}`, котороая передается в extra_vars при запуске ansible-playbook, т.е. таким образом `ansible-playbook -i inventory/prod.yml site.yml -e yandex_vmip=51.250.95.176`
+Дописано два Play: Install NGINX и Install LIGHTHOUSE. Первый для установки NGINX, второй для установки Lighthouse.
 
-```yml
----
-
-clickhouse:
-  hosts:
-    clickhouse-01:
-      ansible_host: '{{ yandex_vmip }}'
-```
-
-2. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает [vector](https://vector.dev)
-
-PLAY ниже скачивает, устанавливает и запускает Vector через systemd:
-```yml
-- name: Install VECTOR
-  hosts: clickhouse
+```ansible
+- name: Install NGINX
+  hosts: lighthouse-01
+  tags: nginx
   tasks:
-    - name: Get Vector distrib by get_url
-      tags: vector
-      ansible.builtin.get_url:
-        url: 'https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-x86_64-unknown-linux-gnu.tar.gz'
-        dest: '{{ ansible_facts["env"]["HOME"] }}/vector_{{ vector_version }}_tar.gz'
-    - name: Mkdir for Vector by file
-      tags: vector
-      ansible.builtin.file:
-        path: "vector"
-        state: directory
-        mode: '0755'
-    - name: Install UnZIP by apt
-      tags: vector
+    - name: NGINX INSTALL by apt
       become: true
       ansible.builtin.apt:
+        update_cache: yes
         package: "{{ item }}"
       with_items:
-        - unzip
-    - name: UnZIP Vector
-      tags: vector
-      ansible.builtin.unarchive:
-        src: '{{ ansible_facts["env"]["HOME"] }}/vector_{{ vector_version }}_tar.gz'
-        dest: '{{ ansible_facts["env"]["HOME"] }}/vector'
-        remote_src: yes
-        extra_opts: [--strip-components=2]
-    - name: Add EnvPATH to profile
-      tags: vector
-      ansible.builtin.lineinfile:
-        dest: '{{ ansible_facts["env"]["HOME"] }}/.profile'
-        regexp: ^export
-        line: 'export PATH="$HOME/vector/bin:$PATH"'
-    - name: Commit EnvPATH
-      tags: vector
-      ansible.builtin.shell:
-        cmd: 'source $HOME/.profile && echo $PATH'
-        executable: /bin/bash
-      register: path
-    - name: CHECK EnvPATH and other VAR (for check only)
-      tags: vector
-      ansible.builtin.debug:
-        msg: 'PATH variables {{ path.stdout }}, HOME directory {{ ansible_facts["env"]["HOME"] }}, VM IP {{ yandex_vmip }}'
-    - name: ADD group vector for Vector
-      tags: vector
-      become: true
-      ansible.builtin.group:
-        name: vector
-        state: present
-    - name: ADD user vector for Vector
-      tags: vector
-      become: true
-      ansible.builtin.user:
-        name: vector
-        groups: vector
-        shell: /bin/bash
-    - name: Change vector.service file for systemd
-      tags: vector
-      ansible.builtin.lineinfile:
-        dest: '{{ ansible_facts["env"]["HOME"] }}/vector/etc/systemd/vector.service'
-        regexp: ^ExecStart=
-        line: 'ExecStart={{ ansible_facts["env"]["HOME"] }}/vector/bin/vector --config {{ ansible_facts["env"]["HOME"] }}/vector/config/vector.toml'
-    - name: Change vector.service file for systemd. Disable PreStart
-      tags: vector
-      ansible.builtin.lineinfile:
-        dest: '{{ ansible_facts["env"]["HOME"] }}/vector/etc/systemd/vector.service'
-        regexp: ^ExecStartPre=
-        line: '#'
-    - name: Copy vector.service to system dir
-      tags: vector
-      become: true
-      ansible.builtin.copy:
-        src: '{{ ansible_facts["env"]["HOME"] }}/vector/etc/systemd/vector.service'
-        dest: /etc/systemd/system/vector.service
-        mode: 0644
-        owner: root
-        group: root
-        remote_src: yes
-    - name: Starting vector by systemd
-      tags: vector
+        - nginx
+- name: Install LIGHTHOUSE
+  hosts: lighthouse-01
+  tags: lighthouse
+  handlers:
+    - name: reload-nginx
       become: true
       ansible.builtin.systemd:
-        name: vector
-        state: started
-        enabled: yes
-
+        name: nginx
+        state: reloaded
+  pre_tasks: 
+    - name: Install GIT
+      become: true
+      ansible.builtin.apt:
+        update_cache: yes
+        package: "{{ item }}"
+      with_items:
+        - git
+  tasks:
+    - name: Git clone LIGHTHOUSE
+      become: true
+      ansible.builtin.git: 
+        repo: '{{ lighthouse_repo }}'
+        dest: '{{ lighthouse_dir }}'
+    - name: Reconfigure NGINX
+      become: true
+      ansible.builtin.lineinfile:
+        dest: '/etc/nginx/sites-available/default'
+        regexp: 'root /var/www/html;'
+        line: 'root /var/www/lighthouse;'
+      notify: reload-nginx
 ```
 
-3. При создании tasks рекомендую использовать модули: `get_url`, `template`, `unarchive`, `file`.
+2. При создании tasks рекомендую использовать модули: `get_url`, `template`, `yum`, `apt`.
 
-Были использованы модули `get_url`, `unarchive`, `file`, `lineinfile`, apt,`user`, `group` ,`copy`,`systemd`.
-`template` не использовался.
+Да, данные модули использованы.
 
-4. Tasks должны: скачать нужной версии дистрибутив, выполнить распаковку в выбранную директорию, установить vector.
+3. Tasks должны: скачать статику lighthouse, установить nginx или любой другой webserver, настроить его конфиг для открытия lighthouse, запустить webserver.
 
-Да, это выполняется. См. п.2. Версия задается в переменной `vector_version: "0.22.0"` в group_vars.
+В качестве вебсервера установлен nginx. Скриншот окна Lighthouse в веб браузере по [ссылке](./Screen_Lighthouse.JPG)
+
+4. Приготовьте свой собственный inventory файл `prod.yml`.
+
+В inventory файл вошли три VM. IP адреса VM передаются через --extravars. Ansible playbook запускается с помощью bash скрипта `./Start.sh play`
 
 5. Запустите `ansible-lint site.yml` и исправьте ошибки, если они есть.
 
-Да, ошибки были, но только в части лишних пробелов (пример ниже). Исправлено.
-
-```bash
-[201] Trailing whitespace
-site.yml:40
-      ansible.builtin.get_url:
-```
+Запущено и исправлено. Основная ошибка это `[201] Trailing whitespace`.
 
 6. Попробуйте запустить playbook на этом окружении с флагом `--check`.
 
-Запущен с флагом --check, все ок, вывод ниже:
+Выполнение прервалось на клонировании репозитория, т.к. git не был установлен (т.к. флаг --check)
 
-```
-vagrant@server1:~/ansible2-netology/playbook$ ansible-playbook -i inventory/prod.yml site.yml -e yandex_vmip=51.250.95.176 --check
+```ansible
+vagrant@server1:~/ansible2-netology$ ./start.sh check
+--- Using IP adresses ...
+"51.250.71.81"
+"51.250.64.45"
+"51.250.95.242"
 
-PLAY [Install ClickHouse] ************************************************************************************************************************************************************************************
+PLAY [Install NGINX] *********************************************************************************************************************************************************************************************
 
-TASK [Gathering Facts] ***************************************************************************************************************************************************************************************
-ok: [clickhouse-01]
+TASK [Gathering Facts] *******************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
 
-TASK [Get clickhouse distrib] ********************************************************************************************************************************************************************************
-failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.deb", "elapsed": 0, "gid": 1001, "group": "vagrant", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "vagrant", "response": "HTTP Error 404: Not Found", "size": 246378832, "state": "file", "status_code": 404, "uid": 1000, "url": "https://packages.clickhouse.com/deb/pool/stable/clickhouse-common-static_22.3.3.44_all.deb"}
-ok: [clickhouse-01] => (item=clickhouse-client)
-ok: [clickhouse-01] => (item=clickhouse-server)
+TASK [NGINX INSTALL by apt] **************************************************************************************************************************************************************************************
+changed: [lighthouse-01] => (item=nginx)
 
-TASK [Get clickhouse distrib (rescue)] ***********************************************************************************************************************************************************************
-ok: [clickhouse-01]
+PLAY [Install LIGHTHOUSE] ****************************************************************************************************************************************************************************************
 
-TASK [Install clickhouse packages] ***************************************************************************************************************************************************************************
-ok: [clickhouse-01] => (item=clickhouse-common-static)
-ok: [clickhouse-01] => (item=clickhouse-client)
-ok: [clickhouse-01] => (item=clickhouse-server)
+TASK [Gathering Facts] *******************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
 
-TASK [Flush handlers if possible] ****************************************************************************************************************************************************************************
+TASK [Install GIT] ***********************************************************************************************************************************************************************************************
+changed: [lighthouse-01] => (item=git)
 
-TASK [Create database] ***************************************************************************************************************************************************************************************
-skipping: [clickhouse-01]
+TASK [Git clone LIGHTHOUSE] **************************************************************************************************************************************************************************************
+fatal: [lighthouse-01]: FAILED! => {"changed": false, "msg": "Failed to find required executable \"git\" in paths: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"}
 
-PLAY [Install VECTOR] ****************************************************************************************************************************************************************************************
-
-TASK [Gathering Facts] ***************************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Get Vector distrib by get_url] *************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Mkdir for Vector by file] ******************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Install UnZIP by apt] **********************************************************************************************************************************************************************************
-ok: [clickhouse-01] => (item=unzip)
-
-TASK [UnZIP Vector] ******************************************************************************************************************************************************************************************
-skipping: [clickhouse-01]
-
-TASK [Add EnvPATH to profile] ********************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Commit EnvPATH] ****************************************************************************************************************************************************************************************
-skipping: [clickhouse-01]
-
-TASK [CHECK EnvPATH and other VAR (for check only)] **********************************************************************************************************************************************************
-ok: [clickhouse-01] => {
-    "msg": "PATH variables , HOME directory /home/vagrant, VM IP 51.250.95.176"
-}
-
-TASK [ADD group vector for Vector] ***************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [ADD user vector for Vector] ****************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Change vector.service file for systemd] ****************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Change vector.service file for systemd. Disable PreStart] **********************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Copy vector.service to system dir] *********************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Starting vector by systemd] ****************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-PLAY RECAP ***************************************************************************************************************************************************************************************************
-clickhouse-01              : ok=15   changed=0    unreachable=0    failed=0    skipped=3    rescued=1    ignored=0
+PLAY RECAP *******************************************************************************************************************************************************************************************************
+lighthouse-01              : ok=4    changed=2    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
 ```
 
 7. Запустите playbook на `prod.yml` окружении с флагом `--diff`. Убедитесь, что изменения на системе произведены.
 
-Да, изменения произведены. Vector запущен.
+```ansible
+vagrant@server1:~/ansible2-netology$ ./start.sh play
+--- Using IP adresses ...
+"51.250.71.81"
+"51.250.64.45"
+"51.250.95.242"
 
-```bash
-vagrant@fhm7vsv12grlh8inu1bt:~/vector/etc/systemd$ systemctl status vector.service
-Warning: The unit file, source configuration file or drop-ins of vector.service changed on disk. Run 'systemctl daemon-reload' to reload units.
-● vector.service - Vector
-     Loaded: loaded (/etc/systemd/system/vector.service; enabled; vendor preset: enabled)
-     Active: active (running) since Tue 2022-06-07 19:04:31 UTC; 10h ago
-       Docs: https://vector.dev
-   Main PID: 6035 (vector)
-      Tasks: 4 (limit: 2316)
-     Memory: 6.6M
-     CGroup: /system.slice/vector.service
-             └─6035 /home/vagrant/vector/bin/vector --config /home/vagrant/vector/config/vector.toml
+PLAY [Install NGINX] *********************************************************************************************************************************************************************************************
 
-```
+TASK [Gathering Facts] *******************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
 
-8. Повторно запустите playbook с флагом `--diff` и убедитесь, что playbook идемпотентен.
+TASK [NGINX INSTALL by apt] **************************************************************************************************************************************************************************************
+ok: [lighthouse-01] => (item=nginx)
 
-Повторный запуск проблем не выявил. Да, выполняется повторная распаковка vector и изменение конфигурации в файлах.
-Ничего страшного в этом нет.
+PLAY [Install LIGHTHOUSE] ****************************************************************************************************************************************************************************************
 
-```bash
+TASK [Gathering Facts] *******************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
 
-vagrant@server1:~/ansible2-netology/playbook$ ansible-playbook -i inventory/prod.yml site.yml -e yandex_vmip=51.250.95.176 --diff
+TASK [Install GIT] ***********************************************************************************************************************************************************************************************
+ok: [lighthouse-01] => (item=git)
 
-PLAY [Install ClickHouse] ************************************************************************************************************************************************************************************
+TASK [Git clone LIGHTHOUSE] **************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
 
-TASK [Gathering Facts] ***************************************************************************************************************************************************************************************
+TASK [Reconfigure NGINX] *****************************************************************************************************************************************************************************************
+ok: [lighthouse-01]
+
+PLAY [Install CLICKHOUSE] ****************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] *******************************************************************************************************************************************************************************************
 ok: [clickhouse-01]
 
-TASK [Get clickhouse distrib] ********************************************************************************************************************************************************************************
+TASK [Get clickhouse distrib] ************************************************************************************************************************************************************************************
 failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.deb", "elapsed": 0, "gid": 1001, "group": "vagrant", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "vagrant", "response": "HTTP Error 404: Not Found", "size": 246378832, "state": "file", "status_code": 404, "uid": 1000, "url": "https://packages.clickhouse.com/deb/pool/stable/clickhouse-common-static_22.3.3.44_all.deb"}
-ok: [clickhouse-01] => (item=clickhouse-client)
+changed: [clickhouse-01] => (item=clickhouse-client)
 ok: [clickhouse-01] => (item=clickhouse-server)
 
-TASK [Get clickhouse distrib (rescue)] ***********************************************************************************************************************************************************************
+TASK [Get clickhouse distrib (rescue)] ***************************************************************************************************************************************************************************
 ok: [clickhouse-01]
 
-TASK [Install clickhouse packages] ***************************************************************************************************************************************************************************
+TASK [Install clickhouse packages] *******************************************************************************************************************************************************************************
 ok: [clickhouse-01] => (item=clickhouse-common-static)
-ok: [clickhouse-01] => (item=clickhouse-client)
+Selecting previously unselected package clickhouse-client.
+(Reading database ... 65558 files and directories currently installed.)
+Preparing to unpack clickhouse-client-22.3.3.44.deb ...
+Unpacking clickhouse-client (22.3.3.44) ...
+Setting up clickhouse-client (22.3.3.44) ...
+changed: [clickhouse-01] => (item=clickhouse-client)
 ok: [clickhouse-01] => (item=clickhouse-server)
 
-TASK [Flush handlers if possible] ****************************************************************************************************************************************************************************
+TASK [Reconfig Clickhouse. Listen 0/0] ***************************************************************************************************************************************************************************
+--- before: /etc/clickhouse-server/config.xml
++++ after: /home/vagrant/.ansible/tmp/ansible-local-170443q_ywz2f/tmpkg9asvs3/config.j2
+@@ -183,10 +183,8 @@
+     <!-- <listen_host>0.0.0.0</listen_host> -->
+ 
+     <!-- Default values - try listen localhost on IPv4 and IPv6. -->
+-    <!--
+-    <listen_host>::1</listen_host>
+-    <listen_host>127.0.0.1</listen_host>
+-    -->
++    
++    <listen_host>0.0.0.0</listen_host>
+ 
+     <!-- Don't exit if IPv6 or IPv4 networks are unavailable while trying to listen. -->
+     <!-- <listen_try>0</listen_try> -->
+@@ -1294,4 +1292,4 @@
+         </tables>
+     </rocksdb>
+     -->
+-</clickhouse>
++</clickhouse>
+\ No newline at end of file
 
-TASK [Create database] ***************************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-PLAY [Install VECTOR] ****************************************************************************************************************************************************************************************
-
-TASK [Gathering Facts] ***************************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Get Vector distrib by get_url] *************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Mkdir for Vector by file] ******************************************************************************************************************************************************************************
-ok: [clickhouse-01]
-
-TASK [Install UnZIP by apt] **********************************************************************************************************************************************************************************
-ok: [clickhouse-01] => (item=unzip)
-
-TASK [UnZIP Vector] ******************************************************************************************************************************************************************************************
 changed: [clickhouse-01]
 
-TASK [Add EnvPATH to profile] ********************************************************************************************************************************************************************************
-ok: [clickhouse-01]
+TASK [Flush handlers if possible] ********************************************************************************************************************************************************************************
 
-TASK [Commit EnvPATH] ****************************************************************************************************************************************************************************************
+RUNNING HANDLER [Start clickhouse service] ***********************************************************************************************************************************************************************
 changed: [clickhouse-01]
 
-TASK [CHECK EnvPATH and other VAR (for check only)] **********************************************************************************************************************************************************
-ok: [clickhouse-01] => {
-    "msg": "PATH variables /home/vagrant/vector/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin, HOME directory /home/vagrant, VM IP 51.250.95.176"
+TASK [Create database] *******************************************************************************************************************************************************************************************
+changed: [clickhouse-01]
+
+PLAY [Install VECTOR] ********************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] *******************************************************************************************************************************************************************************************
+ok: [vector-01]
+
+TASK [Get Vector distrib by get_url] *****************************************************************************************************************************************************************************
+changed: [vector-01]
+
+TASK [Mkdir for Vector by file] **********************************************************************************************************************************************************************************
+--- before
++++ after
+@@ -1,5 +1,5 @@
+ {
+-    "mode": "0775",
++    "mode": "0755",
+     "path": "vector",
+-    "state": "absent"
++    "state": "directory"
+ }
+
+changed: [vector-01]
+
+TASK [Install UnZIP by apt] **************************************************************************************************************************************************************************************
+Suggested packages:
+  zip
+The following NEW packages will be installed:
+  unzip
+0 upgraded, 1 newly installed, 0 to remove and 4 not upgraded.
+changed: [vector-01] => (item=unzip)
+
+TASK [UnZIP Vector] **********************************************************************************************************************************************************************************************
+changed: [vector-01]
+
+TASK [Add EnvPATH to profile] ************************************************************************************************************************************************************************************
+--- before: /home/vagrant/.profile (content)
++++ after: /home/vagrant/.profile (content)
+@@ -25,3 +25,4 @@
+ if [ -d "$HOME/.local/bin" ] ; then
+     PATH="$HOME/.local/bin:$PATH"
+ fi
++export PATH="$HOME/vector/bin:$PATH"
+
+changed: [vector-01]
+
+TASK [Commit EnvPATH] ********************************************************************************************************************************************************************************************
+changed: [vector-01]
+
+TASK [CHECK EnvPATH and other VAR (for check only)] **************************************************************************************************************************************************************
+ok: [vector-01] => {
+    "msg": "PATH variables /home/vagrant/vector/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin, HOME directory /home/vagrant, VM IP 51.250.64.45"
 }
 
-TASK [ADD group vector for Vector] ***************************************************************************************************************************************************************************
-ok: [clickhouse-01]
+TASK [ADD group vector for Vector] *******************************************************************************************************************************************************************************
+changed: [vector-01]
 
-TASK [ADD user vector for Vector] ****************************************************************************************************************************************************************************
-ok: [clickhouse-01]
+TASK [ADD user vector for Vector] ********************************************************************************************************************************************************************************
+changed: [vector-01]
 
-TASK [Change vector.service file for systemd] ****************************************************************************************************************************************************************
+TASK [Change vector.service file for systemd] ********************************************************************************************************************************************************************
 --- before: /home/vagrant/vector/etc/systemd/vector.service (content)
 +++ after: /home/vagrant/vector/etc/systemd/vector.service (content)
 @@ -8,7 +8,7 @@
@@ -311,9 +261,9 @@ TASK [Change vector.service file for systemd] **********************************
  ExecReload=/bin/kill -HUP $MAINPID
  Restart=no
 
-changed: [clickhouse-01]
+changed: [vector-01]
 
-TASK [Change vector.service file for systemd. Disable PreStart] **********************************************************************************************************************************************
+TASK [Change vector.service file for systemd. Disable PreStart] **************************************************************************************************************************************************
 --- before: /home/vagrant/vector/etc/systemd/vector.service (content)
 +++ after: /home/vagrant/vector/etc/systemd/vector.service (content)
 @@ -7,7 +7,7 @@
@@ -326,28 +276,57 @@ TASK [Change vector.service file for systemd. Disable PreStart] ****************
  ExecReload=/usr/bin/vector validate
  ExecReload=/bin/kill -HUP $MAINPID
 
-changed: [clickhouse-01]
+changed: [vector-01]
 
-TASK [Copy vector.service to system dir] *********************************************************************************************************************************************************************
-ok: [clickhouse-01]
+TASK [Copy vector.service to system dir] *************************************************************************************************************************************************************************
+changed: [vector-01]
 
-TASK [Starting vector by systemd] ****************************************************************************************************************************************************************************
-ok: [clickhouse-01]
+TASK [Starting vector by systemd] ********************************************************************************************************************************************************************************
+changed: [vector-01]
 
-PLAY RECAP ***************************************************************************************************************************************************************************************************
-clickhouse-01              : ok=18   changed=4    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0
+PLAY RECAP *******************************************************************************************************************************************************************************************************
+clickhouse-01              : ok=6    changed=4    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0   
+lighthouse-01              : ok=6    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+vector-01                  : ok=14   changed=12   unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
+--- All ok. Check the service! 
 ```
+
+8. Повторно запустите playbook с флагом `--diff` и убедитесь, что playbook идемпотентен.
+
+Повторный запуск проблем не выявил. Да, выполняется повторная распаковка vector и изменение конфигурации в файлах.
+Ничего страшного в этом нет.
 
 9. Подготовьте README.md файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги.
 
-Файл подгтовлен. Playbook состоит из двух Play: Install ClickHouse и Install VECTOR.
+Файл подгтовлен. Playbook состоит из четырех  Play: Install NGINX, Install LightHouse, Install ClickHouse и Install VECTOR.
+Сформирован [bash](./start.sh) скрипт запуска для ускорения процессов. Bash [bash](./start.sh) скрипт может запускаться:
 
+```bash
+./start.sh apply # выполняет terraform init и terrfaorm apply
+./start.sh play # выполняет запуск playbook c необходимыми опциями (extravars, diff, путь до инвентори и плейбука)
+./start.sh showip # выполняет terraform output с нужными параметрами
+./start.sh check # выполняет запуск playbook с опцией --check
+./start.sh destroy # выполняет terraform destroy
 ```
+
+Описание тасков ansible:
+
+```ansible
+Таски Install Nginx
+- name: NGINX INSTALL by apt # установка NGINX из apt
+
+Таски Install Lighthouse
+- name: reload-nginx # handler на релоад nginx через systemd
+- name: Install GIT # pre-task на установку git через apt
+- name: Git clone LIGHTHOUSE # клонирование репозитория Lighthouse
+- name: Reconfigure NGINX # смена директории расположения файла index.html. Меняем на место установки lighhouse. Делаем notify.
+
 Таски Install ClickHouse
 - name: Get clickhouse distrib  # скачивает deb пакет указанной версии
 - name: Get clickhouse distrib (rescue)  # скачивает deb пакет указанной версии (повтор для common static, т.к. не попадает под шаблон верхней таски)
 - name: Install clickhouse packages # вектор устанавливает через менеджер apt
+- name: Reconfig Clickhouse. Listen 0/0 # копирует конфиг файл из локальной директории. В конфигурации добавлен ListenInterface 0.0.0.0, в противном случае слушает только на 127.0.0.1.
 - name: Flush handlers if possible # выполняет запуск через handler
 - name: Create database # создает базу
 
@@ -366,20 +345,21 @@ clickhouse-01              : ok=18   changed=4    unreachable=0    failed=0    s
 - name: Copy vector.service to system dir # копируем vector.service в системную директорию system.d
 - name: Starting vector by systemd # запускаем vector через модуль systemd
 ```
+
 Переменные используются следующие:
-```
+
+```ansible
 {{ ansible_facts["env"]["HOME"] }} # домашняя директория пользователя под которым выполняются все манипуляцуии на удаленной VM
 {{ vector_version }} # версия vactor из group_vars
 {{ clickhouse_version }} # версия clickhouse из group_vars
-{{ yandex_vmip }} # IP адрес удаленной VM, передается через extra_vars при запуске (см. п.1)
+{{ vmip1 }}  # IP адрес удаленной VM Lighthouse, передается через extra_vars при запуске (см. п.1)
+{{ vmip2 }}  # IP адрес удаленной VM Clickhouse, передается через extra_vars при запуске (см. п.1)
+{{ vmip3 }}  # IP адрес удаленной VM Vector, передается через extra_vars при запуске (см. п.1)
+{{ clickhouse_listen_host }}
+{{ lighthouse_repo }} # репозиторий Lighthouse
+{{ lighthouse_dir }} # директория установки Lighthouse
 ```
 
-10. Готовый playbook выложите в свой репозиторий, поставьте тег `08-ansible-02-playbook` на фиксирующий коммит, в ответ предоставьте ссылку на него.
+10. Готовый playbook выложите в свой репозиторий, поставьте тег `08-ansible-03-yandex` на фиксирующий коммит, в ответ предоставьте ссылку на него.
 
 Выполнено!
-
-### Доп. вопросы
-
-1) Как добавить/удалить символ "#" в начале строки  (найденной через regexp) в ansible при помощи модуля lineinfile (либо другого)? На данный момент удалось выполнить только replace.
-
-2) Как передать output переменную в terraform (в частности IP адрес созданной машины) в ansible extra_vars? Необходимо для bash скрипта для автоматизации.

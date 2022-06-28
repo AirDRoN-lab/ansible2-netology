@@ -19,7 +19,7 @@
       ansible.builtin.systemd:
         name: nginx
         state: reloaded
-  pre_tasks: 
+  pre_tasks:
     - name: Install GIT
       become: true
       ansible.builtin.apt:
@@ -30,7 +30,7 @@
   tasks:
     - name: Git clone LIGHTHOUSE
       become: true
-      ansible.builtin.git: 
+      ansible.builtin.git:
         repo: '{{ lighthouse_repo }}'
         dest: '{{ lighthouse_dir }}'
     - name: Reconfigure NGINX
@@ -69,7 +69,7 @@
     - name: Reconfig Clickhouse. Listen 0/0
       become: true
       ansible.builtin.template:
-        src: 'clickhouse/config.j2' 
+        src: 'clickhouse/config.j2'
         dest: '/etc/clickhouse-server/config.xml'
         owner: clickhouse
         group: clickhouse
