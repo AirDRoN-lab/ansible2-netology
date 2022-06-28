@@ -1,6 +1,4 @@
-# Домашнее задание к занятию "08.02 Работа с Playbook"
-
-## Подготовка к выполнению
+# Домашнее задание к занятию "08.03 Использование Yandex Cloud"
 
 ## Основная часть
 
@@ -300,7 +298,7 @@ vector-01                  : ok=14   changed=12   unreachable=0    failed=0    s
 9. Подготовьте README.md файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги.
 
 Файл подгтовлен. Playbook состоит из четырех  Play: Install NGINX, Install LightHouse, Install ClickHouse и Install VECTOR.
-Сформирован [bash](./start.sh) скрипт запуска для ускорения процессов. Bash [bash](./start.sh) скрипт может запускаться:
+Сформирован [bash](./start.sh) скрипт запуска для ускорения процессов. [Bash](./start.sh) скрипт может запускаться:
 
 ```bash
 ./start.sh apply # выполняет terraform init и terrfaorm apply
@@ -362,4 +360,4 @@ vector-01                  : ok=14   changed=12   unreachable=0    failed=0    s
 
 10. Готовый playbook выложите в свой репозиторий, поставьте тег `08-ansible-03-yandex` на фиксирующий коммит, в ответ предоставьте ссылку на него.
 
-Выполнено!
+Выполнено! [Ссылка на скрин](./Screen_Lighthouse.JPG) веб ббраузера с открытым Lighthouse и выбранной базой данных logs.
