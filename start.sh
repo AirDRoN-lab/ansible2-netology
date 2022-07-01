@@ -55,3 +55,10 @@ then
     echo "$vm_ip2"
     echo "$vm_ip3"
 fi
+
+
+if [ "$1" == "installroles" ]
+then
+    ansible-galaxy install -r playbook/requirements.yml -p playbook/roles
+fi
+
