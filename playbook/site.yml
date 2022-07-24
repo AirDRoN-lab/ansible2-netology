@@ -50,6 +50,7 @@
       package: "{{ item }}"
     with_items:
       - unzip
+      - curl
   roles:
     - vector
     

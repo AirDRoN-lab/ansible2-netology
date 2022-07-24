@@ -33,6 +33,18 @@ then
     ansible-playbook -i playbook/inventory/prod.yml playbook/site.yml -e vmip1=$vm_ip1 -e vmip2=$vm_ip2 -e vmip3=$vm_ip3 --diff && echo "--- All ok. Check the service! " 
 fi
 
+if [ "$1" == "play-vector" ]
+then  
+    vm_ip1=$(terraform -chdir=terraform output external_ip_address_vm_1)
+    vm_ip2=$(terraform -chdir=terraform output external_ip_address_vm_2)
+    vm_ip3=$(terraform -chdir=terraform output external_ip_address_vm_3)
+    echo "--- Using IP adresses ..."
+    echo "$vm_ip1"
+    echo "$vm_ip2"
+    echo "$vm_ip3"
+    ansible-playbook -i playbook/inventory/prod.yml playbook/site.yml -e vmip1=$vm_ip1 -e vmip2=$vm_ip2 -e vmip3=$vm_ip3 --diff --tags vector && echo "--- All ok. Check the service! " 
+fi
+
 if [ "$1" == "check" ]
 then  
     vm_ip1=$(terraform -chdir=terraform output external_ip_address_vm_1)

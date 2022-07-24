@@ -1,5 +1,6 @@
 galaxy_info:
   role_name: vector
+  namespace: AIRDroN-lab
   author: DG
   description: Role for installation Vector
   company: Home
@@ -7,14 +8,12 @@ galaxy_info:
   license: MIT
 
   platforms:
-    - name: Ubuntu
+    - name: ubuntu
       versions:
         - focal
-        - bionic
-        - xenial
 
   min_ansible_version: 2.8
   galaxy_tags: 
-    - vector
+   - vector
 
 dependencies: []
