@@ -3,8 +3,13 @@
 - name: Prepare PLAY
   hosts: all
   tasks:
+    - name: Install python-apt in prepare
+#      become: true
+      ansible.builtin.apt:
+       update_cache: yes
+       package: "python-apt"
     - name: Install CURL in prepare
-      become: true
+#      become: true
       ansible.builtin.apt:
         update_cache: yes
         package: "curl"

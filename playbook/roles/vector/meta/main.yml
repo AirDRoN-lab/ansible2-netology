@@ -1,6 +1,6 @@
 galaxy_info:
   role_name: vector
-  namespace: AIRDroN-lab
+  namespace: airdron_lab
   author: DG
   description: Role for installation Vector
   company: Home

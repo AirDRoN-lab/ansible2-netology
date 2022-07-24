@@ -1,0 +1,290 @@
+vagrant@server1:~/ansible2-netology/playbook/roles/vector$ molecule test -s ubuntu
+INFO     ubuntu scenario test matrix: dependency, lint, cleanup, destroy, syntax, create, prepare, converge, idempotence, side_effect, verify, cleanup, destroy
+INFO     Performing prerun with role_name_check=0...
+INFO     Set ANSIBLE_LIBRARY=/home/vagrant/.cache/ansible-compat/b0d51c/modules:/home/vagrant/.ansible/plugins/modules:/usr/share/ansible/plugins/modules
+INFO     Set ANSIBLE_COLLECTIONS_PATH=/home/vagrant/.cache/ansible-compat/b0d51c/collections:/home/vagrant/.ansible/collections:/usr/share/ansible/collections
+INFO     Set ANSIBLE_ROLES_PATH=/home/vagrant/.cache/ansible-compat/b0d51c/roles:/home/vagrant/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles
+INFO     Using /home/vagrant/.cache/ansible-compat/b0d51c/roles/airdron_lab.vector symlink to current repository in order to enable Ansible to find the role using its expected full name.
+INFO     Running ubuntu > dependency
+WARNING  Skipping, missing the requirements file.
+WARNING  Skipping, missing the requirements file.
+INFO     Running ubuntu > lint
+INFO     Lint is disabled.
+INFO     Running ubuntu > cleanup
+WARNING  Skipping, cleanup playbook not configured.
+INFO     Running ubuntu > destroy
+INFO     Sanity checks: 'docker'
+
+PLAY [Destroy] *****************************************************************
+
+TASK [Destroy molecule instance(s)] ********************************************
+changed: [localhost] => (item=instance)
+
+TASK [Wait for instance(s) deletion to complete] *******************************
+FAILED - RETRYING: [localhost]: Wait for instance(s) deletion to complete (300 retries left).
+ok: [localhost] => (item=instance)
+
+TASK [Delete docker networks(s)] ***********************************************
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=2    changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+
+INFO     Running ubuntu > syntax
+
+playbook: /home/vagrant/ansible2-netology/playbook/roles/vector/molecule/ubuntu/converge.yml
+INFO     Running ubuntu > create
+
+PLAY [Create] ******************************************************************
+
+TASK [Log into a Docker registry] **********************************************
+skipping: [localhost] => (item=None)
+skipping: [localhost]
+
+TASK [Check presence of custom Dockerfiles] ************************************
+ok: [localhost] => (item={'capabilities': ['SYS_ADMIN'], 'command': '/sbin/init', 'dockerfile': '../resources/Dockerfile.j2', 'env': {'ANSIBLE_USER': 'ansible', 'DEPLOY_GROUP': 'deployer', 'SUDO_GROUP': 'sudo', 'container': 'docker'}, 'image': 'docker.io/pycontribs/ubuntu:latest', 'name': 'instance', 'privileged': True, 'tmpfs': ['/run', '/tmp'], 'volumes': ['/sys/fs/cgroup:/sys/fs/cgroup']})
+
+TASK [Create Dockerfiles from image names] *************************************
+changed: [localhost] => (item={'capabilities': ['SYS_ADMIN'], 'command': '/sbin/init', 'dockerfile': '../resources/Dockerfile.j2', 'env': {'ANSIBLE_USER': 'ansible', 'DEPLOY_GROUP': 'deployer', 'SUDO_GROUP': 'sudo', 'container': 'docker'}, 'image': 'docker.io/pycontribs/ubuntu:latest', 'name': 'instance', 'privileged': True, 'tmpfs': ['/run', '/tmp'], 'volumes': ['/sys/fs/cgroup:/sys/fs/cgroup']})
+
+TASK [Discover local Docker images] ********************************************
+ok: [localhost] => (item={'diff': [], 'dest': '/home/vagrant/.cache/molecule/vector/ubuntu/Dockerfile_docker_io_pycontribs_ubuntu_latest', 'src': '/home/vagrant/.ansible/tmp/ansible-tmp-1658668029.9878194-290305-266872921280133/source', 'md5sum': '02ae6aeccffa40e536653210f8d58616', 'checksum': 'bda95bb015b93b98cf003031d39cc4c281935e76', 'changed': True, 'uid': 1000, 'gid': 1000, 'owner': 'vagrant', 'group': 'vagrant', 'mode': '0600', 'state': 'file', 'size': 2219, 'invocation': {'module_args': {'src': '/home/vagrant/.ansible/tmp/ansible-tmp-1658668029.9878194-290305-266872921280133/source', 'dest': '/home/vagrant/.cache/molecule/vector/ubuntu/Dockerfile_docker_io_pycontribs_ubuntu_latest', 'mode': '0600', 'follow': False, '_original_basename': 'Dockerfile.j2', 'checksum': 'bda95bb015b93b98cf003031d39cc4c281935e76', 'backup': False, 'force': True, 'unsafe_writes': False, 'content': None, 'validate': None, 'directory_mode': None, 'remote_src': None, 'local_follow': None, 'owner': None, 'group': None, 'seuser': None, 'serole': None, 'selevel': None, 'setype': None, 'attributes': None}}, 'failed': False, 'item': {'capabilities': ['SYS_ADMIN'], 'command': '/sbin/init', 'dockerfile': '../resources/Dockerfile.j2', 'env': {'ANSIBLE_USER': 'ansible', 'DEPLOY_GROUP': 'deployer', 'SUDO_GROUP': 'sudo', 'container': 'docker'}, 'image': 'docker.io/pycontribs/ubuntu:latest', 'name': 'instance', 'privileged': True, 'tmpfs': ['/run', '/tmp'], 'volumes': ['/sys/fs/cgroup:/sys/fs/cgroup']}, 'ansible_loop_var': 'item', 'i': 0, 'ansible_index_var': 'i'})
+
+TASK [Build an Ansible compatible image (new)] *********************************
+ok: [localhost] => (item=molecule_local/docker.io/pycontribs/ubuntu:latest)
+
+TASK [Create docker network(s)] ************************************************
+
+TASK [Determine the CMD directives] ********************************************
+ok: [localhost] => (item={'capabilities': ['SYS_ADMIN'], 'command': '/sbin/init', 'dockerfile': '../resources/Dockerfile.j2', 'env': {'ANSIBLE_USER': 'ansible', 'DEPLOY_GROUP': 'deployer', 'SUDO_GROUP': 'sudo', 'container': 'docker'}, 'image': 'docker.io/pycontribs/ubuntu:latest', 'name': 'instance', 'privileged': True, 'tmpfs': ['/run', '/tmp'], 'volumes': ['/sys/fs/cgroup:/sys/fs/cgroup']})
+
+TASK [Create molecule instance(s)] *********************************************
+changed: [localhost] => (item=instance)
+
+TASK [Wait for instance(s) creation to complete] *******************************
+FAILED - RETRYING: [localhost]: Wait for instance(s) creation to complete (300 retries left).
+changed: [localhost] => (item={'failed': 0, 'started': 1, 'finished': 0, 'ansible_job_id': '580974849446.290441', 'results_file': '/home/vagrant/.ansible_async/580974849446.290441', 'changed': True, 'item': {'capabilities': ['SYS_ADMIN'], 'command': '/sbin/init', 'dockerfile': '../resources/Dockerfile.j2', 'env': {'ANSIBLE_USER': 'ansible', 'DEPLOY_GROUP': 'deployer', 'SUDO_GROUP': 'sudo', 'container': 'docker'}, 'image': 'docker.io/pycontribs/ubuntu:latest', 'name': 'instance', 'privileged': True, 'tmpfs': ['/run', '/tmp'], 'volumes': ['/sys/fs/cgroup:/sys/fs/cgroup']}, 'ansible_loop_var': 'item'})
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=7    changed=3    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0
+
+INFO     Running ubuntu > prepare
+
+PLAY [Prepare PLAY] ************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [instance]
+
+TASK [Install CURL in prepare] *************************************************
+changed: [instance]
+
+PLAY RECAP *********************************************************************
+instance                   : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+INFO     Running ubuntu > converge
+
+PLAY [Converge] ****************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [instance]
+
+TASK [Include vector] **********************************************************
+
+TASK [vector : Add Vector REPO to SourceList] **********************************
+ok: [instance]
+
+TASK [vector : Install VECTOR by APT] ******************************************
+changed: [instance]
+
+TASK [vector : Vector config] **************************************************
+changed: [instance]
+
+TASK [vector : ADD vector.service to system dir] *******************************
+changed: [instance]
+
+TASK [vector : Starting vector by systemd] *************************************
+skipping: [instance]
+
+PLAY RECAP *********************************************************************
+instance                   : ok=5    changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+
+INFO     Running ubuntu > idempotence
+
+PLAY [Converge] ****************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [instance]
+
+TASK [Include vector] **********************************************************
+
+TASK [vector : Add Vector REPO to SourceList] **********************************
+ok: [instance]
+
+TASK [vector : Install VECTOR by APT] ******************************************
+ok: [instance]
+
+TASK [vector : Vector config] **************************************************
+ok: [instance]
+
+TASK [vector : ADD vector.service to system dir] *******************************
+ok: [instance]
+
+TASK [vector : Starting vector by systemd] *************************************
+skipping: [instance]
+
+PLAY RECAP *********************************************************************
+instance                   : ok=5    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+
+INFO     Idempotence completed successfully.
+INFO     Running ubuntu > side_effect
+WARNING  Skipping, side effect playbook not configured.
+INFO     Running ubuntu > verify
+INFO     Running Ansible Verifier
+
+PLAY [Verify] ******************************************************************
+
+TASK [Check Vector version] ****************************************************
+changed: [instance]
+
+TASK [Check Vector data_dir] ***************************************************
+changed: [instance]
+
+TASK [Check release codes from Vector checking] ********************************
+ok: [instance] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+PLAY RECAP *********************************************************************
+instance                   : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+INFO     Verifier completed successfully.
+INFO     Running ubuntu > cleanup
+WARNING  Skipping, cleanup playbook not configured.
+INFO     Running ubuntu > destroy
+
+PLAY [Destroy] *****************************************************************
+
+TASK [Destroy molecule instance(s)] ********************************************
+changed: [localhost] => (item=instance)
+
+TASK [Wait for instance(s) deletion to complete] *******************************
+FAILED - RETRYING: [localhost]: Wait for instance(s) deletion to complete (300 retries left).
+changed: [localhost] => (item=instance)
+
+TASK [Delete docker networks(s)] ***********************************************
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=2    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+
+INFO     Pruning extra files from scenario ephemeral directory
+
+
+
+#--------------------------------------------------------------------------------
+
+
+
+vagrant@server1:~/ansible2-netology/playbook/roles/vector$ molecule test -s compatibility
+INFO     compatibility scenario test matrix: create, prepare, converge, destroy
+INFO     Performing prerun with role_name_check=0...
+INFO     Set ANSIBLE_LIBRARY=/home/vagrant/.cache/ansible-compat/b0d51c/modules:/home/vagrant/.ansible/plugins/modules:/usr/share/ansible/plugins/modules
+INFO     Set ANSIBLE_COLLECTIONS_PATH=/home/vagrant/.cache/ansible-compat/b0d51c/collections:/home/vagrant/.ansible/collections:/usr/share/ansible/collections
+INFO     Set ANSIBLE_ROLES_PATH=/home/vagrant/.cache/ansible-compat/b0d51c/roles:/home/vagrant/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles
+INFO     Using /home/vagrant/.cache/ansible-compat/b0d51c/roles/airdron_lab.vector symlink to current repository in order to enable Ansible to find the role using its expected full name.
+INFO     Running compatibility > create
+INFO     Sanity checks: 'docker'
+
+PLAY [Create] ******************************************************************
+
+TASK [Log into a Docker registry] **********************************************
+skipping: [localhost] => (item=None)
+skipping: [localhost]
+
+TASK [Check presence of custom Dockerfiles] ************************************
+ok: [localhost] => (item={'image': 'docker.io/pycontribs/ubuntu:latest', 'name': 'instance', 'pre_build_image': True, 'uts': 'private'})
+
+TASK [Create Dockerfiles from image names] *************************************
+skipping: [localhost] => (item={'image': 'docker.io/pycontribs/ubuntu:latest', 'name': 'instance', 'pre_build_image': True, 'uts': 'private'})
+
+TASK [Discover local Docker images] ********************************************
+ok: [localhost] => (item={'changed': False, 'skipped': True, 'skip_reason': 'Conditional result was False', 'item': {'image': 'docker.io/pycontribs/ubuntu:latest', 'name': 'instance', 'pre_build_image': True, 'uts': 'private'}, 'ansible_loop_var': 'item', 'i': 0, 'ansible_index_var': 'i'})
+
+TASK [Build an Ansible compatible image (new)] *********************************
+skipping: [localhost] => (item=molecule_local/docker.io/pycontribs/ubuntu:latest)
+
+TASK [Create docker network(s)] ************************************************
+
+TASK [Determine the CMD directives] ********************************************
+ok: [localhost] => (item={'image': 'docker.io/pycontribs/ubuntu:latest', 'name': 'instance', 'pre_build_image': True, 'uts': 'private'})
+
+TASK [Create molecule instance(s)] *********************************************
+changed: [localhost] => (item=instance)
+
+TASK [Wait for instance(s) creation to complete] *******************************
+FAILED - RETRYING: [localhost]: Wait for instance(s) creation to complete (300 retries left).
+FAILED - RETRYING: [localhost]: Wait for instance(s) creation to complete (299 retries left).
+changed: [localhost] => (item={'failed': 0, 'started': 1, 'finished': 0, 'ansible_job_id': '239205557638.295406', 'results_file': '/home/vagrant/.ansible_async/239205557638.295406', 'changed': True, 'item': {'image': 'docker.io/pycontribs/ubuntu:latest', 'name': 'instance', 'pre_build_image': True, 'uts': 'private'}, 'ansible_loop_var': 'item'})
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=5    changed=2    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0
+
+INFO     Running compatibility > prepare
+
+PLAY [Prepare PLAY] ************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [instance]
+
+TASK [Install python-apt in prepare] *******************************************
+changed: [instance]
+
+TASK [Install CURL in prepare] *************************************************
+changed: [instance]
+
+PLAY RECAP *********************************************************************
+instance                   : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+INFO     Running compatibility > converge
+
+PLAY [Converge] ****************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [instance]
+
+TASK [Include vector] **********************************************************
+
+TASK [vector : Add Vector REPO to SourceList] **********************************
+ok: [instance]
+
+TASK [vector : Install VECTOR by APT] ******************************************
+changed: [instance]
+
+TASK [vector : Vector config] **************************************************
+changed: [instance]
+
+TASK [vector : ADD vector.service to system dir] *******************************
+changed: [instance]
+
+TASK [vector : Starting vector by systemd] *************************************
+skipping: [instance]
+
+PLAY RECAP *********************************************************************
+instance                   : ok=5    changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+
+INFO     Running compatibility > destroy
+
+PLAY [Destroy] *****************************************************************
+
+TASK [Destroy molecule instance(s)] ********************************************
+changed: [localhost] => (item=instance)
+
+TASK [Wait for instance(s) deletion to complete] *******************************
+FAILED - RETRYING: [localhost]: Wait for instance(s) deletion to complete (300 retries left).
+changed: [localhost] => (item=instance)
+
+TASK [Delete docker networks(s)] ***********************************************
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=2    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+
+INFO     Pruning extra files from scenario ephemeral directory

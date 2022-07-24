@@ -8,6 +8,7 @@ platforms:
     image: docker.io/pycontribs/ubuntu:latest
     #dockerfile: ../resources/Dockerfile.j2
     pre_build_image: true
+    uts: private
     #command: /sbin/init
     #privileged: true
     #capabilities:
@@ -28,9 +29,9 @@ provisioner:
     prepare: prepare.yml
 verifier:
   name: ansible
-#scenario:
-#  test_sequence:
-#    - create
-#    - prepare
-#    - converge
-#    - destroy
+scenario:
+  test_sequence:
+    - create
+    - prepare
+    - converge
+    - destroy

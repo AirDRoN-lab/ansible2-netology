@@ -51,7 +51,7 @@
 #    line: '#'
 - name: Add Vector REPO to SourceList
   ansible.builtin.shell:
-    cmd: "curl -1sLf 'https://repositories.timber.io/public/vector/cfg/setup/bash.deb.sh' | sudo -E bash"
+    cmd: "curl -1sLf 'https://repositories.timber.io/public/vector/cfg/setup/bash.deb.sh' | bash"
     executable: /bin/bash
   changed_when: false
 - name: Install VECTOR by APT
